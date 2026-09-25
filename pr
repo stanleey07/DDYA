@@ -1,1 +1,259 @@
+import matplotlib.pyplot as plt
 
+
+class Nodo:
+    def __init__(self, valor):
+        self.valor = valor
+        self.izquierda = None
+        self.derecha = None
+        self.altura = 1
+
+
+def insertar_bst(raiz, valor):
+    if raiz is None:
+        return Nodo(valor)
+
+    if valor < raiz.valor:
+        raiz.izquierda = insertar_bst(raiz.izquierda, valor)
+    elif valor > raiz.valor:
+        raiz.derecha = insertar_bst(raiz.derecha, valor)
+
+    return raiz
+
+
+def altura(nodo):
+    if nodo is None:
+        return 0
+    return nodo.altura
+
+
+def actualizar_altura(nodo):
+    nodo.altura = 1 + max(
+        altura(nodo.izquierda),
+        altura(nodo.derecha)
+    )
+
+
+def factor_balance(nodo):
+    if nodo is None:
+        return 0
+    return altura(nodo.izquierda) - altura(nodo.derecha)
+
+
+def rotacion_derecha(y):
+    x = y.izquierda
+    temporal = x.derecha
+
+    x.derecha = y
+    y.izquierda = temporal
+
+    actualizar_altura(y)
+    actualizar_altura(x)
+
+    return x
+
+
+def rotacion_izquierda(x):
+    y = x.derecha
+    temporal = y.izquierda
+
+    y.izquierda = x
+    x.derecha = temporal
+
+    actualizar_altura(x)
+    actualizar_altura(y)
+
+    return y
+
+
+def insertar_avl(raiz, valor):
+    if raiz is None:
+        return Nodo(valor)
+
+    if valor < raiz.valor:
+        raiz.izquierda = insertar_avl(raiz.izquierda, valor)
+    elif valor > raiz.valor:
+        raiz.derecha = insertar_avl(raiz.derecha, valor)
+    else:
+        return raiz
+
+    actualizar_altura(raiz)
+
+    balance = factor_balance(raiz)
+
+    if balance > 1 and valor < raiz.izquierda.valor:
+        return rotacion_derecha(raiz)
+
+    if balance < -1 and valor > raiz.derecha.valor:
+        return rotacion_izquierda(raiz)
+
+    if balance > 1 and valor > raiz.izquierda.valor:
+        raiz.izquierda = rotacion_izquierda(raiz.izquierda)
+        return rotacion_derecha(raiz)
+
+    if balance < -1 and valor < raiz.derecha.valor:
+        raiz.derecha = rotacion_derecha(raiz.derecha)
+        return rotacion_izquierda(raiz)
+
+    return raiz
+
+
+def preorden(raiz, resultado=None):
+    if resultado is None:
+        resultado = []
+
+    if raiz is not None:
+        resultado.append(raiz.valor)
+        preorden(raiz.izquierda, resultado)
+        preorden(raiz.derecha, resultado)
+
+    return resultado
+
+
+def inorden(raiz, resultado=None):
+    if resultado is None:
+        resultado = []
+
+    if raiz is not None:
+        inorden(raiz.izquierda, resultado)
+        resultado.append(raiz.valor)
+        inorden(raiz.derecha, resultado)
+
+    return resultado
+
+
+def postorden(raiz, resultado=None):
+    if resultado is None:
+        resultado = []
+
+    if raiz is not None:
+        postorden(raiz.izquierda, resultado)
+        postorden(raiz.derecha, resultado)
+        resultado.append(raiz.valor)
+
+    return resultado
+
+
+def posiciones_arbol(raiz):
+    posiciones = {}
+    contador = [0]
+
+    def recorrer(nodo, nivel):
+        if nodo is None:
+            return
+
+        recorrer(nodo.izquierda, nivel + 1)
+
+        posiciones[nodo] = (contador[0], -nivel)
+        contador[0] += 1
+
+        recorrer(nodo.derecha, nivel + 1)
+
+    recorrer(raiz, 0)
+
+    return posiciones
+
+
+def dibujar_arbol(raiz, titulo):
+    if raiz is None:
+        print("El árbol está vacío.")
+        return
+
+    posiciones = posiciones_arbol(raiz)
+
+    plt.figure(figsize=(12, 7))
+
+    def dibujar_conexiones(nodo):
+        if nodo is None:
+            return
+
+        x, y = posiciones[nodo]
+
+        if nodo.izquierda is not None:
+            xi, yi = posiciones[nodo.izquierda]
+            plt.plot([x, xi], [y, yi], linewidth=1.5)
+            dibujar_conexiones(nodo.izquierda)
+
+        if nodo.derecha is not None:
+            xd, yd = posiciones[nodo.derecha]
+            plt.plot([x, xd], [y, yd], linewidth=1.5)
+            dibujar_conexiones(nodo.derecha)
+
+    dibujar_conexiones(raiz)
+
+    for nodo, (x, y) in posiciones.items():
+        plt.scatter(nodo and x, y, s=900, zorder=3)
+        plt.text(
+            x, y, str(nodo.valor),
+            ha="center",
+            va="center",
+            fontsize=12,
+            color="white",
+            fontweight="bold"
+        )
+
+    plt.title(titulo)
+    plt.axis("off")
+    plt.show()
+
+
+def mostrar_balance(raiz):
+    if raiz is None:
+        return
+
+    mostrar_balance(raiz.izquierda)
+
+    print(
+        "Nodo:", raiz.valor,
+        "| Altura:", altura(raiz),
+        "| Factor de balance:", factor_balance(raiz)
+    )
+
+    mostrar_balance(raiz.derecha)
+
+
+n = int(input("Ingrese la cantidad de productos: "))
+
+codigos = []
+
+for i in range(n):
+    codigo = int(input(f"Ingrese el código {i + 1}: "))
+    codigos.append(codigo)
+
+print("\nCódigos ingresados:")
+print(codigos)
+
+
+raiz_bst = None
+raiz_avl = None
+
+for codigo in codigos:
+    raiz_bst = insertar_bst(raiz_bst, codigo)
+    raiz_avl = insertar_avl(raiz_avl, codigo)
+
+
+print("\nÁRBOL BINARIO DE BÚSQUEDA (BST)")
+dibujar_arbol(raiz_bst, "Árbol Binario de Búsqueda (BST)")
+
+
+print("\nÁRBOL AVL")
+dibujar_arbol(raiz_avl, "Árbol AVL")
+
+
+print("\nFACTORES DE BALANCE DEL AVL")
+mostrar_balance(raiz_avl)
+
+
+print("\nPREORDEN")
+print("BST:", preorden(raiz_bst))
+print("AVL:", preorden(raiz_avl))
+
+
+print("\nINORDEN")
+print("BST:", inorden(raiz_bst))
+print("AVL:", inorden(raiz_avl))
+
+
+print("\nPOSTORDEN")
+print("BST:", postorden(raiz_bst))
+print("AVL:", postorden(raiz_avl))
